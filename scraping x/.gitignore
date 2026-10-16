@@ -4,3 +4,4 @@ __pycache__/
 user_data_playwright/
 scraper_fyp.log
 .DS_Store
+cookies.json
