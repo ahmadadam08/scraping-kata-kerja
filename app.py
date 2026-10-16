@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import json
+import uuid
 import sys
 import subprocess
 from datetime import datetime, date
@@ -78,7 +79,13 @@ st.markdown("""
 st.markdown('<div class="main-title">🐦 Scraper Kata X (Twitter)</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">Aplikasi otomasi pencarian data tweet berbahasa Indonesia berbasis Playwright & Streamlit.</div>', unsafe_allow_html=True)
 
-# ── Inisialisasi Session State ─────────────────────────────────────────
+# ── Inisialisasi Session State (Isolasi Per Pengguna) ──────────────────
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())[:8]
+if "user_data" not in st.session_state:
+    st.session_state.user_data = pd.DataFrame()
+if "failed_keywords" not in st.session_state:
+    st.session_state.failed_keywords = []
 if "scraping_logs" not in st.session_state:
     st.session_state.scraping_logs = []
 if "is_scraping" not in st.session_state:
@@ -166,9 +173,9 @@ with st.sidebar:
         st.info("ℹ️ Menggunakan `cookies.json` lokal bawaan (karena input teks kosong).")
 
 
-# ── Main Content Area ─────────────────────────────────────────────────
-df_lama = muat_data_tersimpan()
-failed_kws = muat_failed_keywords()
+# ── Main Content Area (Data Khusus Pengguna Sesi Ini) ────────────────
+df_lama = st.session_state.user_data
+failed_kws = st.session_state.failed_keywords
 counts_lama, kata_terpenuhi, kata_kurang = hitung_status_target_kata(
     df_lama, target_count, user_keywords
 )
@@ -243,6 +250,7 @@ with tab_scrape:
 
         with st.spinner("Sedang menjalankan scraping dengan Playwright... Mohon tunggu"):
             try:
+                session_user_dir = f"user_data_{st.session_state.session_id}"
                 df_baru = scrape_x_playwright(
                     keywords=target_scrape,
                     since_date=since_str,
@@ -252,22 +260,29 @@ with tab_scrape:
                     fallback_lang=fallback_lang,
                     headless=headless_mode,
                     cookies_data=cookies_data,
+                    user_data_dir=session_user_dir,
                     log_callback=log_cb
                 )
 
                 if df_baru.empty and df_lama.empty:
                     st.warning("⚠️ Tidak ada data tweet baru yang berhasil dikumpulkan.")
                 else:
-                    df_final = simpan_hasil_gabungan(df_baru=df_baru, df_lama=df_lama)
-                    st.success(f"🎉 Scraping selesai! Berhasil memperoleh {len(df_baru)} data baru. Total data saat ini: {len(df_final)} baris.")
+                    # Gabungkan data khusus untuk sesi pengunjung ini
+                    list_dfs = [d for d in [df_lama, df_baru] if d is not None and not d.empty]
+                    if list_dfs:
+                        df_gabungan = pd.concat(list_dfs, ignore_index=True)
+                        if "kata_kerja" in df_gabungan.columns and "teks" in df_gabungan.columns:
+                            df_gabungan = df_gabungan.drop_duplicates(subset=["kata_kerja", "teks"], keep="first")
+                        st.session_state.user_data = df_gabungan
+                    st.success(f"🎉 Scraping selesai! Berhasil memperoleh {len(df_baru)} data baru. Total data Anda saat ini: {len(st.session_state.user_data)} baris.")
                     st.rerun()
 
             except Exception as e:
                 st.error(f"❌ Terjadi kesalahan saat scraping: {e}")
 
 with tab_data:
-    st.markdown("### Data Hasil Scraping")
-    df_current = muat_data_tersimpan()
+    st.markdown("### Data Hasil Scraping (Khusus Sesi Anda)")
+    df_current = st.session_state.user_data
     
     if df_current.empty:
         st.info("Belum ada data tersimpan. Jalankan scraping terlebih dahulu.")
