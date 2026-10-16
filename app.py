@@ -1,8 +1,21 @@
 import streamlit as st
 import pandas as pd
 import json
+import sys
+import subprocess
 from datetime import datetime, date
 from pathlib import Path
+
+# Otomatis install Chromium Playwright saat deploy di Cloud / Linux
+@st.cache_resource
+def ensure_playwright_browsers():
+    if sys.platform != "win32":
+        try:
+            subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=True)
+        except Exception as e:
+            st.warning(f"Gagal menginstall browser Playwright: {e}")
+
+ensure_playwright_browsers()
 
 # Import fungsi-fungsi inti dari scraper_kata_kerja.py
 from scraper_kata_kerja import (
@@ -121,7 +134,7 @@ with st.sidebar:
     st.subheader("4. Pengaturan Browser")
     headless_mode = st.checkbox(
         "Jalankan Headless (Background)",
-        value=False,
+        value=(sys.platform != "win32"),
         help="Wajib dicentang jika dijalankan di Streamlit Cloud / Server tanpa display."
     )
     use_lang_filter = st.checkbox("Gunakan filter Twitter `lang:id`", value=True)
