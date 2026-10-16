@@ -135,7 +135,8 @@ Setiap data tersimpan di `hasil_scraping/semua_data.json` dengan format berikut:
     "tanggal_upload": "2026-10-14",
     "tanggal_scraping": "2026-10-16",
     "mengandung_kerja": true,
-    "kalimat_kunci": "Jangan deh, nanti meledak -"
+    "kalimat_kunci": "Jangan deh, nanti meledak -",
+    "link": "https://x.com/username/status/1234567890123456789"
   }
 ]
 ```
@@ -148,3 +149,4 @@ Setiap data tersimpan di `hasil_scraping/semua_data.json` dengan format berikut:
 - **`tanggal_scraping`**: Tanggal saat tweet diambil oleh scraper.
 - **`mengandung_kerja`**: Nilai boolean (`true`/`false`) penanda keberadaan kata kerja dalam teks.
 - **`kalimat_kunci`**: Potongan kalimat spesifik yang memuat kata kerja target.
+- **`link`**: URL langsung ke tweet asli di X.

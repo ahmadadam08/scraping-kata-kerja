@@ -296,7 +296,14 @@ with tab_data:
         else:
             df_tampil = df_current
 
-        st.dataframe(df_tampil, use_container_width=True, height=400)
+        st.dataframe(
+            df_tampil,
+            use_container_width=True,
+            height=400,
+            column_config={
+                "link": st.column_config.LinkColumn("link", help="Buka tweet asli di X")
+            }
+        )
 
         # Download Buttons
         c_dl1, c_dl2 = st.columns(2)

@@ -13,7 +13,8 @@
 ║    "tanggal_upload"  : "YYYY-MM-DD",                                ║
 ║    "tanggal_scraping": "YYYY-MM-DD",                                ║
 ║    "mengandung_kerja": true/false,                                   ║
-║    "kalimat_kunci"   : "..."                                         ║
+║    "kalimat_kunci"   : "...",                                        ║
+║    "link"            : "https://x.com/user/status/..."              ║
 ║  }                                                                   ║
 ║                                                                      ║
 ║  Cara Install Dependensi:                                            ║
@@ -556,7 +557,7 @@ def scrape_x_playwright(
                         except Exception:
                             pass
 
-                        item_terkumpul: dict[str, str] = {}
+                        item_terkumpul: dict[str, tuple[str, str]] = {}
                         scroll_stuck = 0
                         max_scrolls  = 25
 
@@ -590,8 +591,31 @@ def scrape_x_playwright(
                                         if dt_attr:
                                             tgl_upload = dt_attr.split("T")[0]
 
+                                    # Ambil link tweet (permalink) dari anchor
+                                    # yang membungkus elemen <time>
+                                    link_tweet = ""
+                                    try:
+                                        href = None
+                                        if time_el:
+                                            href = time_el.evaluate(
+                                                "el => { const a = el.closest('a'); return a ? a.getAttribute('href') : null; }"
+                                            )
+                                        if not href:
+                                            a_el = article.query_selector('a[href*="/status/"]')
+                                            if a_el:
+                                                href = a_el.get_attribute("href")
+                                        if href:
+                                            href = href.split("?")[0]
+                                            href = re.sub(r"/(analytics|photo/\d+|video/\d+)$", "", href)
+                                            link_tweet = (
+                                                href if href.startswith("http")
+                                                else f"https://x.com{href}"
+                                            )
+                                    except Exception:
+                                        pass
+
                                     if t not in item_terkumpul:
-                                        item_terkumpul[t] = tgl_upload
+                                        item_terkumpul[t] = (tgl_upload, link_tweet)
 
                                 except Exception:
                                     continue
@@ -626,8 +650,9 @@ def scrape_x_playwright(
                                 "tanggal_scraping" : tgl_scraping_hari_ini,
                                 "mengandung_kerja" : cocok_keyword(kw, t),
                                 "kalimat_kunci"    : ekstrak_kalimat_kunci(t, kw),
+                                "link"             : link_up,
                             }
-                            for t, tgl_up in item_terkumpul.items()
+                            for t, (tgl_up, link_up) in item_terkumpul.items()
                         ]
 
                     tweets_lolos = ambil_tweets(url, butuh_tambahan)
@@ -705,7 +730,7 @@ def format_dan_bersihkan_df(df: pd.DataFrame) -> pd.DataFrame:
 
     Kolom final yang dihasilkan:
       kata_kerja | teks | sumber | tanggal_upload |
-      tanggal_scraping | mengandung_kerja | kalimat_kunci
+      tanggal_scraping | mengandung_kerja | kalimat_kunci | link
 
     Parameter:
         df → DataFrame yang akan dirapikan
@@ -748,6 +773,7 @@ def format_dan_bersihkan_df(df: pd.DataFrame) -> pd.DataFrame:
         "tanggal_scraping",
         "mengandung_kerja",
         "kalimat_kunci",
+        "link",
     ]
     for col in kolom_final:
         if col not in df.columns:
