@@ -20,7 +20,7 @@ from scraper_kata_kerja import (
 
 # ── Konfigurasi Halaman ────────────────────────────────────────────────
 st.set_page_config(
-    page_title="X (Twitter) Scraper - Kata Kerja",
+    page_title="X (Twitter) Scraper Kata",
     page_icon="🐦",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -62,7 +62,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Header ─────────────────────────────────────────────────────────────
-st.markdown('<div class="main-title">🐦 Scraper Kata Kerja X (Twitter)</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🐦 Scraper Kata X (Twitter)</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">Aplikasi otomasi pencarian data tweet berbahasa Indonesia berbasis Playwright & Streamlit.</div>', unsafe_allow_html=True)
 
 # ── Inisialisasi Session State ─────────────────────────────────────────
@@ -79,9 +79,9 @@ with st.sidebar:
     st.subheader("1. Kata Kunci (Keywords)")
     default_keywords_str = ", ".join(SEED_KEYWORDS)
     keywords_input = st.text_area(
-        "Daftar Kata Kerja (pisahkan dengan koma):",
+        "Daftar Kata (pisahkan dengan koma):",
         value=default_keywords_str,
-        help="Masukkan kata kerja yang ingin dicari di Twitter. Pisahkan dengan tanda koma.",
+        help="Masukkan kata yang ingin dicari di Twitter. Pisahkan dengan tanda koma.",
         height=100
     )
     user_keywords = [k.strip() for k in keywords_input.split(",") if k.strip()]
@@ -129,18 +129,29 @@ with st.sidebar:
 
     # 5. Autentikasi Cookies
     st.subheader("5. Autentikasi Akun (Cookies)")
-    st.markdown("X mewajibkan login. Unggah `cookies.json` Anda jika di deploy ke Cloud.")
-    uploaded_cookies = st.file_uploader("Upload cookies.json", type=["json"])
+    st.markdown("X mewajibkan login. Masukkan/tempel teks JSON cookies Anda di bawah ini:")
+    
+    cookies_input = st.text_area(
+        "Paste JSON Cookies",
+        height=180,
+        placeholder='[\n  {\n    "domain": ".x.com",\n    "name": "auth_token",\n    "value": "..."\n  }\n]',
+        help="Salin isi JSON dari ekstensi cookies editor browser lalu tempel di sini."
+    )
     
     cookies_data = None
-    if uploaded_cookies is not None:
+    if cookies_input.strip():
         try:
-            cookies_data = json.load(uploaded_cookies)
-            st.success("✅ File cookies.json berhasil diunggah!")
+            parsed_cookies = json.loads(cookies_input.strip())
+            if isinstance(parsed_cookies, list):
+                cookies_data = parsed_cookies
+                st.success(f"✅ Cookies valid! Terdeteksi {len(cookies_data)} cookie.")
+            else:
+                st.error("Format harus berupa array/list JSON `[...]`.")
         except Exception as e:
-            st.error(f"Format JSON salah: {e}")
+            st.error(f"Format JSON tidak valid: {e}")
     elif Path("cookies.json").exists():
-        st.info("ℹ️ Menggunakan `cookies.json` lokal bawaan.")
+        st.info("ℹ️ Menggunakan `cookies.json` lokal bawaan (karena input teks kosong).")
+
 
 # ── Main Content Area ─────────────────────────────────────────────────
 df_lama = muat_data_tersimpan()
@@ -183,7 +194,7 @@ with c4:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ── Tabs Navigasi ─────────────────────────────────────────────────────
-tab_scrape, tab_data, tab_panduan = st.tabs(["🚀 Mulai Scraping", "📊 Data Tersimpan", "📖 Panduan Deploy Streamlit"])
+tab_scrape, tab_data = st.tabs(["🚀 Mulai Scraping", "📊 Data Tersimpan",])
 
 with tab_scrape:
     st.markdown("### Eksekusi Scraping")
@@ -206,7 +217,7 @@ with tab_scrape:
         target_scrape = [k for k in kata_perlu if k in user_keywords] or kata_perlu
 
     if target_scrape:
-        st.info(f"Target kata kerja ({len(target_scrape)} kata): **{', '.join(target_scrape)}**")
+        st.info(f"Target kata ({len(target_scrape)} kata): **{', '.join(target_scrape)}**")
         
         # Tempat log langsung di antarmuka
         log_expander = st.expander("📝 Live Log Scraping", expanded=True)
@@ -250,7 +261,7 @@ with tab_data:
     else:
         # Filter kata di tabel
         daftar_kata_unik = ["Semua"] + sorted(list(df_current["kata_kerja"].dropna().unique()))
-        pilihan_filter = st.selectbox("Filter berdasarkan kata kerja:", daftar_kata_unik)
+        pilihan_filter = st.selectbox("Filter berdasarkan kata:", daftar_kata_unik)
 
         if pilihan_filter != "Semua":
             df_tampil = df_current[df_current["kata_kerja"] == pilihan_filter]
@@ -279,22 +290,3 @@ with tab_data:
                 mime="application/json",
                 use_container_width=True
             )
-
-with tab_panduan:
-    st.markdown("""
-    ### 🚀 Panduan Deploy ke Streamlit Community Cloud
-
-    1. **Upload Proyek ke GitHub**:
-       - Buat repository baru di GitHub (misal: `scraping-x-streamlit`).
-       - Masukkan berkas `app.py`, `scraper_kata_kerja.py`, `requirements.txt`, dan `packages.txt`.
-       - *(Opsional)* Jika tidak ingin mengunggah `cookies.json` ke GitHub publik, Anda cukup mengunggahnya langsung lewat tombol upload di menu sidebar aplikasi Streamlit saat dijalankan.
-
-    2. **Buka Streamlit Cloud**:
-       - Buka [share.streamlit.io](https://share.streamlit.io/) dan login dengan akun GitHub Anda.
-       - Klik **"New app"**.
-       - Pilih repository yang baru Anda buat, branch `main`, dan set file path ke `app.py` (atau `scraping x/app.py`).
-
-    3. **Konfigurasi Playwright di Cloud**:
-       - File `packages.txt` dan `requirements.txt` yang sudah disediakan akan otomatis menginstall dependensi Chromium di server Streamlit Cloud.
-       - Saat scraping di Streamlit Cloud, pastikan selalu mencentang opsi **"Jalankan Headless (Background)"**.
-    """)

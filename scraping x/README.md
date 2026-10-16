@@ -1,6 +1,6 @@
-# Scraper Kata Kerja X (Twitter) - Playwright
+# Scraper Kata X (Twitter) - Playwright
 
-Aplikasi otomasi pencarian dan scraping tweet di platform **X (Twitter)** berbasis **Playwright**. Program ini dirancang khusus untuk mengumpulkan tweet berbahasa Indonesia berdasarkan kata kerja tertentu (*seed keywords*), menyaring tweet relevan, mengekstrak tanggal unggah secara akurat, serta menggabungkan data ke dalam satu berkas master (JSON & CSV) tanpa duplikasi.
+Aplikasi otomasi pencarian dan scraping tweet di platform **X (Twitter)** berbasis **Playwright**. Program ini dirancang untuk mengumpulkan tweet berbahasa Indonesia berdasarkan kata kunci pilihan (*keywords*), menyaring tweet relevan, mengekstrak tanggal unggah secara akurat, serta menggabungkan data ke dalam berkas master (JSON & CSV) tanpa duplikasi.
 
 ---
 
