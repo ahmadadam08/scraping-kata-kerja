@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+user_data_playwright/
+scraper_fyp.log
+.DS_Store
